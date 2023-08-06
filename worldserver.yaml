@@ -1,0 +1,597 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worldserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worldserver
+  template:
+    metadata:
+      labels:
+        app: worldserver
+    spec:
+      containers:
+      - image: hellof20/p-azero:v1
+        imagePullPolicy: IfNotPresent
+        name: worldserver
+        command: ["/azerothcore/env/dist/bin/worldserver"]
+        ports:
+        - containerPort: 8085
+        - containerPort: 7878
+        readinessProbe:
+          tcpSocket:
+            port: 8085
+          initialDelaySeconds: 5
+          periodSeconds: 5        
+        resources:
+          requests:
+            memory: "2048Mi"
+            cpu: "1"
+          limits:
+            memory: "2048Mi"
+            cpu: "2"
+        volumeMounts:
+        - name: config
+          mountPath: /azerothcore/env/dist/etc
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: worldserver-configmap
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: worldserver-svc
+spec:
+  ports:
+  - port: 8085
+    protocol: TCP
+    targetPort: 8085  
+  selector:
+    app: worldserver
+  type: LoadBalancer
+
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: worldserver-soap-svc
+# spec:
+#   ports:
+#   - port: 7878
+#     protocol: TCP
+#     targetPort: 7878  
+#   selector:
+#     app: worldserver
+#   type: LoadBalancer
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: worldserver-configmap
+data:
+  worldserver.conf: |-
+    [worldserver]
+    RealmID = 1
+    DataDir = "/azerothcore/env/dist/data" # Copied from dockerdist
+    LogsDir = "/azerothcore/env/dist/logs" # Copied from dockerdist
+    TempDir = ""
+    LoginDatabaseInfo = "ac-database;3306;root;password;acore_auth" # Copied from dockerdist
+    WorldDatabaseInfo = "ac-database;3306;root;password;acore_world" # Copied from dockerdist
+    CharacterDatabaseInfo = "ac-database;3306;root;password;acore_characters" # Copied from dockerdist
+    Database.Reconnect.Seconds = 15
+    Database.Reconnect.Attempts = 20
+    LoginDatabase.WorkerThreads     = 1
+    WorldDatabase.WorkerThreads     = 1
+    CharacterDatabase.WorkerThreads = 1
+    LoginDatabase.SynchThreads     = 1
+    WorldDatabase.SynchThreads     = 1
+    CharacterDatabase.SynchThreads = 2
+    MaxPingTime = 30
+    WorldServerPort = 8085
+    BindIP = "0.0.0.0"
+    CMakeCommand = ""
+    BuildDirectory = ""
+    SourceDirectory = ""
+    MySQLExecutable = ""
+    ThreadPool = 2
+    IPLocationFile = ""
+    AllowLoggingIPAddressesInDatabase = 1
+    UseProcessors = 0
+    ProcessPriority = 1
+    Compression = 1
+    PlayerLimit = 1000
+    SaveRespawnTimeImmediately = 1
+    MaxOverspeedPings = 2
+    CloseIdleConnections = 0 # Copied from dockerdist
+    SocketTimeOutTime = 900000
+    SocketTimeOutTimeActive = 60000
+    SessionAddDelay = 10000
+    MinWorldUpdateTime = 1
+    MapUpdateInterval = 10
+    ChangeWeatherInterval = 600000
+    PlayerSaveInterval = 900000
+    PlayerSave.Stats.MinLevel = 0
+    PlayerSave.Stats.SaveOnlyOnLogout = 1
+    vmap.enableLOS    = 1
+    vmap.enableHeight = 1
+    vmap.petLOS = 1
+    vmap.BlizzlikePvPLOS = 1
+    vmap.enableIndoorCheck = 1
+    DetectPosCollision = 1
+    CheckGameObjectLoS = 1
+    TargetPosRecalculateRange = 1.5
+    UpdateUptimeInterval = 1
+    LogDB.Opt.ClearInterval = 10
+    LogDB.Opt.ClearTime = 1209600
+    MaxCoreStuckTime = 0
+    AddonChannel = 1
+    MapUpdate.Threads = 1
+    CleanCharacterDB = 0
+    PersistentCharacterCleanFlags = 0
+    PreloadAllNonInstancedMapGrids = 0
+    SetAllCreaturesWithWaypointMovementActive = 0
+    PidFile = ""
+    PacketLogFile = ""
+    GameType = 0
+    RealmZone = 1
+    World.RealmAvailability = 1
+    StrictNames.Reserved = 1
+    StrictNames.Profanity = 1
+    StrictPlayerNames = 0
+    StrictCharterNames = 0
+    StrictPetNames = 0
+    DBC.Locale = 255
+    DeclinedNames = 0
+    Expansion = 2
+    MinPlayerName = 2
+    MinCharterName = 2
+    MinPetName = 2
+    Guild.CharterCost = 1000
+    ArenaTeam.CharterCost.2v2 = 800000
+    ArenaTeam.CharterCost.3v3 = 1200000
+    ArenaTeam.CharterCost.5v5 = 2000000
+    MaxWhoListReturns = 49
+    CharacterCreating.Disabled = 0
+    CharacterCreating.Disabled.RaceMask = 0
+    CharacterCreating.Disabled.ClassMask = 0
+    CharactersPerAccount = 50
+    CharactersPerRealm = 10
+    HeroicCharactersPerRealm = 1
+    CharacterCreating.MinLevelForHeroicCharacter = 55
+    SkipCinematics = 0
+    MaxPlayerLevel = 80
+    MinDualSpecLevel = 40
+    StartPlayerLevel = 1
+    StartHeroicPlayerLevel = 55
+    StartPlayerMoney = 0
+    StartHeroicPlayerMoney = 2000
+    MaxHonorPoints = 75000
+    MaxHonorPointsMoneyPerPoint = 0
+    StartHonorPoints = 0
+    MaxArenaPoints = 10000
+    StartArenaPoints = 0
+    RecruitAFriend.MaxLevel = 60
+    RecruitAFriend.MaxDifference = 4
+    InstantLogout = 1
+    PreventAFKLogout = 0
+    DisableWaterBreath = 4
+    AllFlightPaths = 0
+    InstantFlightPaths = 0
+    AlwaysMaxSkillForLevel = 0
+    ActivateWeather = 1
+    CastUnstuck = 1
+    Instance.IgnoreLevel = 0
+    Instance.IgnoreRaid = 0
+    Instance.GMSummonPlayer = 0
+    Instance.ResetTimeHour = 4
+    Instance.UnloadDelay = 1800000
+    Quests.EnableQuestTracker = 0
+    Quests.LowLevelHideDiff = 4
+    Quests.HighLevelHideDiff = 7
+    Quests.IgnoreRaid = 0
+    Quests.IgnoreAutoAccept = 0
+    Quests.IgnoreAutoComplete = 0
+    Calendar.DeleteOldEventsHour = 6
+    Guild.EventLogRecordsCount = 100
+    Guild.ResetHour = 6
+    Guild.BankEventLogRecordsCount = 25
+    MaxPrimaryTradeSkill = 2
+    MinPetitionSigns = 9
+    MaxGroupXPDistance = 74
+    MaxRecruitAFriendBonusDistance = 100
+    MailDeliveryDelay = 3600
+    SkillChance.Prospecting = 0
+    SkillChance.Milling = 0
+    OffhandCheckAtSpellUnlearn = 1
+    ClientCacheVersion = 0
+    Event.Announce = 0
+    BeepAtStart = 1
+    FlashAtStart = 1
+    Server.LoginInfo = 0
+    Command.LookupMaxResults = 0
+    AllowTickets = 1
+    DeletedCharacterTicketTrace = 0
+    DBC.EnforceItemAttributes = 1
+    AccountInstancesPerHour = 5
+    BirthdayTime = 1222964635
+    IsContinentTransport.Enabled = 1
+    IsPreloadedContinentTransport.Enabled = 0
+    TOTPMasterSecret =
+    Updates.EnableDatabases = 7
+    Updates.AutoSetup   = 1
+    Updates.Redundancy  = 1
+    Updates.ArchivedRedundancy = 0
+    Updates.AllowRehash = 1
+    Updates.CleanDeadRefMaxCount = 3
+    Warden.Enabled = 1
+    Warden.NumMemChecks = 3
+    Warden.NumLuaChecks = 1
+    Warden.NumOtherChecks = 7
+    Warden.ClientResponseDelay = 600
+    Warden.ClientCheckHoldOff = 30
+    Warden.ClientCheckFailAction = 0
+    Warden.BanDuration = 259200
+    AllowTwoSide.Accounts = 1
+    AllowTwoSide.Interaction.Calendar = 0
+    AllowTwoSide.Interaction.Chat = 0
+    AllowTwoSide.Interaction.Emote = 0
+    AllowTwoSide.Interaction.Channel = 0
+    AllowTwoSide.Interaction.Group = 0
+    AllowTwoSide.Interaction.Guild = 0
+    AllowTwoSide.Interaction.Arena = 0
+    AllowTwoSide.Interaction.Auction = 0
+    AllowTwoSide.Interaction.Mail = 0
+    AllowTwoSide.WhoList = 0
+    AllowTwoSide.AddFriend = 0
+    AllowTwoSide.Trade = 0
+    TalentsInspecting = 1
+    ThreatRadius = 60
+    Rate.Creature.Aggro = 1
+    CreatureFamilyFleeAssistanceRadius = 30
+    CreatureFamilyAssistanceRadius = 10
+    CreatureFamilyAssistanceDelay = 2000
+    CreatureFamilyAssistancePeriod = 3000
+    CreatureFamilyFleeDelay = 7000
+    WorldBossLevelDiff = 3
+    Corpse.Decay.NORMAL    = 60
+    Corpse.Decay.RARE      = 300
+    Corpse.Decay.ELITE     = 300
+    Corpse.Decay.RAREELITE = 300
+    Corpse.Decay.WORLDBOSS = 3600
+    Rate.Corpse.Decay.Looted = 0.5
+    Rate.Creature.Normal.Damage          = 1
+    Rate.Creature.Elite.Elite.Damage     = 1
+    Rate.Creature.Elite.RARE.Damage      = 1
+    Rate.Creature.Elite.RAREELITE.Damage = 1
+    Rate.Creature.Elite.WORLDBOSS.Damage = 1
+    Rate.Creature.Normal.SpellDamage          = 1
+    Rate.Creature.Elite.Elite.SpellDamage     = 1
+    Rate.Creature.Elite.RARE.SpellDamage      = 1
+    Rate.Creature.Elite.RAREELITE.SpellDamage = 1
+    Rate.Creature.Elite.WORLDBOSS.SpellDamage = 1
+    Rate.Creature.Normal.HP          = 1
+    Rate.Creature.Elite.Elite.HP     = 1
+    Rate.Creature.Elite.RARE.HP      = 1
+    Rate.Creature.Elite.RAREELITE.HP = 1
+    Rate.Creature.Elite.WORLDBOSS.HP = 1
+    ListenRange.Say = 40
+    ListenRange.TextEmote = 40
+    ListenRange.Yell = 300
+    Creature.MovingStopTimeForPlayer = 180000
+    WaypointMovementStopTimeForPlayer = 120
+    NpcEvadeIfTargetIsUnreachable = 5
+    NpcRegenHPIfTargetIsUnreachable = 1
+    NpcRegenHPTimeIfTargetIsUnreachable = 10
+    Creatures.CustomIDs = "190010,55005,999991,25462,98888,601014,34567,34568"
+    ChatFakeMessagePreventing = 1
+    ChatStrictLinkChecking.Severity = 0
+    ChatStrictLinkChecking.Kick = 0
+    ChatFlood.MessageCount = 10
+    ChatFlood.MessageDelay = 1
+    ChatFlood.AddonMessageCount = 100
+    ChatFlood.AddonMessageDelay = 1
+    ChatFlood.MuteTime = 10
+    Chat.MuteFirstLogin = 0
+    Chat.MuteTimeFirstLogin = 120
+    Channel.RestrictedLfg = 1
+    Channel.SilentlyGMJoin = 0
+    Channel.ModerationGMLevel = 1
+    ChatLevelReq.Channel = 1
+    ChatLevelReq.Whisper = 1
+    ChatLevelReq.Say = 1
+    PartyLevelReq = 1
+    AllowPlayerCommands = 1
+    PreserveCustomChannels = 1
+    PreserveCustomChannelDuration = 14
+    GM.LoginState = 2
+    GM.Visible = 2
+    GM.Chat = 2
+    GM.WhisperingTo = 2
+    GM.InGMList.Level = 3
+    GM.InWhoList.Level = 3
+    GM.StartLevel = 1
+    GM.AllowInvite = 0
+    GM.AllowFriend = 0
+    GM.LowerSecurity = 0
+    GM.TicketSystem.ChanceOfGMSurvey = 50
+    Visibility.GroupMode = 1
+    Visibility.Distance.Continents = 90
+    Visibility.Distance.Instances = 120
+    Visibility.Distance.BGArenas = 180
+    Visibility.Notify.Period.OnContinents = 1000
+    Visibility.Notify.Period.InInstances  = 1000
+    Visibility.Notify.Period.InBGArenas   = 1000
+    Visibility.ObjectSparkles = 1
+    Visibility.ObjectQuestMarkers = 1
+    Rate.Health            = 1
+    Rate.Mana              = 1
+    Rate.Rage.Income       = 1
+    Rate.Rage.Loss         = 1
+    Rate.RunicPower.Income = 1
+    Rate.RunicPower.Loss   = 1
+    Rate.Focus             = 1
+    Rate.Energy            = 1
+    Rate.Loyalty           = 1
+    Rate.Skill.Discovery = 1
+    Rate.Drop.Item.Poor             = 1
+    Rate.Drop.Item.Normal           = 1
+    Rate.Drop.Item.Uncommon         = 1
+    Rate.Drop.Item.Rare             = 1
+    Rate.Drop.Item.Epic             = 1
+    Rate.Drop.Item.Legendary        = 1
+    Rate.Drop.Item.Artifact         = 1
+    Rate.Drop.Item.Referenced       = 1
+    Rate.Drop.Money                 = 1
+    Rate.Drop.Item.ReferencedAmount = 1
+    Rate.Drop.Item.GroupAmount = 1
+    Rate.RewardBonusMoney = 1
+    Rate.SellValue.Item.Poor             = 1
+    Rate.SellValue.Item.Normal           = 1
+    Rate.SellValue.Item.Uncommon         = 1
+    Rate.SellValue.Item.Rare             = 1
+    Rate.SellValue.Item.Epic             = 1
+    Rate.SellValue.Item.Legendary        = 1
+    Rate.SellValue.Item.Artifact         = 1
+    Rate.SellValue.Item.Heirloom         = 1
+    Rate.BuyValue.Item.Poor             = 1
+    Rate.BuyValue.Item.Normal           = 1
+    Rate.BuyValue.Item.Uncommon         = 1
+    Rate.BuyValue.Item.Rare             = 1
+    Rate.BuyValue.Item.Epic             = 1
+    Rate.BuyValue.Item.Legendary        = 1
+    Rate.BuyValue.Item.Artifact         = 1
+    Rate.BuyValue.Item.Heirloom         = 1
+    Rate.XP.Kill      = 1
+    Rate.XP.Quest     = 1
+    Rate.XP.Quest.DF  = 1
+    Rate.XP.Explore   = 1
+    Rate.XP.Pet       = 1
+    Rate.XP.BattlegroundKillAV   = 1
+    Rate.XP.BattlegroundKillWSG  = 1
+    Rate.XP.BattlegroundKillAB   = 1
+    Rate.XP.BattlegroundKillEOTS = 1
+    Rate.XP.BattlegroundKillSOTA = 1
+    Rate.XP.BattlegroundKillIC   = 1
+    Rate.RepairCost = 1
+    Rate.Rest.InGame                 = 1
+    Rate.Rest.Offline.InTavernOrCity = 1
+    Rate.Rest.Offline.InWilderness   = 1
+    Rate.Damage.Fall = 1
+    Rate.Auction.Time    = 1
+    Rate.Auction.Deposit = 1
+    Rate.Auction.Cut     = 1
+    Rate.Honor = 1
+    Rate.ArenaPoints = 1
+    Rate.Talent = 1
+    Rate.Reputation.Gain = 1
+    Rate.Reputation.LowLevel.Kill = 1
+    Rate.Reputation.LowLevel.Quest = 1
+    Rate.Reputation.RecruitAFriendBonus = 0.1
+    Rate.MoveSpeed = 1
+    Rate.InstanceResetTime = 1
+    Rate.Pet.LevelXP = 0.05
+    WaterBreath.Timer = 180000
+    EnableLowLevelRegenBoost = 1
+    SkillGain.Crafting  = 1
+    SkillGain.Defense   = 1
+    SkillGain.Gathering = 1
+    SkillGain.Weapon    = 1
+    SkillChance.Orange = 100
+    SkillChance.Yellow = 75
+    SkillChance.Green  = 25
+    SkillChance.Grey   = 0
+    SkillChance.MiningSteps   = 0
+    SkillChance.SkinningSteps = 0
+    DurabilityLoss.InPvP = 0
+    DurabilityLoss.OnDeath = 10
+    DurabilityLossChance.Damage = 0.5
+    DurabilityLossChance.Absorb = 0.5
+    DurabilityLossChance.Parry = 0.05
+    DurabilityLossChance.Block = 0.05
+    Death.SicknessLevel = 11
+    Death.CorpseReclaimDelay.PvP = 1
+    Death.CorpseReclaimDelay.PvE = 0
+    Death.Bones.World               = 1
+    Death.Bones.BattlegroundOrArena = 1
+    Die.Command.Mode = 1
+    Rate.MissChanceMultiplier.TargetCreature = 11
+    Rate.MissChanceMultiplier.TargetPlayer = 7
+    Rate.MissChanceMultiplier.OnlyAffectsPlayer = 0
+    Stats.Limits.Enable = 0
+    Stats.Limits.Dodge = 95.0
+    Stats.Limits.Parry = 95.0
+    Stats.Limits.Block = 95.0
+    Stats.Limits.Crit  = 95.0
+    AutoBroadcast.On = 0
+    AutoBroadcast.Center = 0
+    AutoBroadcast.Timer = 60000
+    AutoBroadcast.MinDisableLevel = 0
+    Battleground.CastDeserter = 1
+    Battleground.QueueAnnouncer.Enable = 0
+    Battleground.QueueAnnouncer.Limit.MinLevel = 0
+    Battleground.QueueAnnouncer.Limit.MinPlayers = 3
+    Battleground.QueueAnnouncer.SpamProtection.Delay = 30
+    Battleground.QueueAnnouncer.PlayerOnly = 0
+    Battleground.QueueAnnouncer.Timed = 0
+    Battleground.QueueAnnouncer.Timer = 30000
+    Battleground.PrematureFinishTimer = 300000
+    Battleground.PremadeGroupWaitForMatch = 1800000
+    Battleground.GiveXPForKills = 0
+    Battleground.Random.ResetHour = 6
+    Battleground.StoreStatistics.Enable = 1
+    Battleground.TrackDeserters.Enable = 1
+    Battleground.InvitationType = 0
+    Battleground.ReportAFK.Timer = 4
+    Battleground.ReportAFK = 3
+    Battleground.DisableQuestShareInBG = 0
+    Battleground.DisableReadyCheckInBG = 0
+    Battleground.RewardWinnerHonorFirst = 30
+    Battleground.RewardWinnerArenaFirst = 25
+    Battleground.RewardWinnerHonorLast  = 15
+    Battleground.RewardWinnerArenaLast  = 0
+    Battleground.RewardLoserHonorFirst  = 5
+    Battleground.RewardLoserHonorLast   = 5
+    Battleground.PlayerRespawn = 30
+    Battleground.RestorationBuffRespawn = 20
+    Battleground.BerserkingBuffRespawn = 120
+    Battleground.SpeedBuffRespawn = 150
+    Wintergrasp.Enable = 1
+    Wintergrasp.PlayerMax = 120
+    Wintergrasp.PlayerMin = 0
+    Wintergrasp.PlayerMinLvl = 77
+    Wintergrasp.BattleTimer = 30
+    Wintergrasp.NoBattleTimer = 150
+    Wintergrasp.CrashRestartTimer = 10
+    Arena.MaxRatingDifference = 150
+    Arena.RatingDiscardTimer = 600000
+    Arena.PreviousOpponentsDiscardTimer = 120000
+    Arena.AutoDistributePoints = 0
+    Arena.AutoDistributeInterval = 7
+    Arena.GamesRequired = 10
+    Arena.QueueAnnouncer.Enable = 0
+    Arena.QueueAnnouncer.PlayerOnly = 0
+    Arena.ArenaSeason.ID = 8
+    Arena.ArenaSeason.InProgress = 1
+    Arena.ArenaStartRating = 0
+    Arena.ArenaStartPersonalRating = 0
+    Arena.ArenaStartMatchmakerRating = 1500
+    Arena.ArenaWinRatingModifier1 = 48
+    Arena.ArenaWinRatingModifier2 = 24
+    Arena.ArenaLoseRatingModifier = 24
+    Arena.ArenaMatchmakerRatingModifier = 24
+    Network.Threads = 1
+    Network.OutKBuff = -1
+    Network.OutUBuff = 65536
+    Network.TcpNodelay = 1
+    Console.Enable = 1
+    Ra.Enable = 0
+    Ra.IP = "0.0.0.0"
+    Ra.Port = 3443
+    Ra.MinLevel = 3
+    SOAP.Enabled = 0
+    SOAP.IP = "127.0.0.1"
+    SOAP.Port = 7878
+    CharDelete.Method = 0
+    CharDelete.MinLevel = 0
+    CharDelete.KeepDays = 30
+    ItemDelete.Method = 0
+    ItemDelete.Vendor = 0
+    ItemDelete.Quality = 3
+    ItemDelete.ItemLevel = 80
+    PlayerStart.AllReputation = 0
+    PlayerStart.CustomSpells = 0
+    PlayerStart.MapsExplored = 0
+    HonorPointsAfterDuel = 0
+    AlwaysMaxWeaponSkill = 0
+    PvPToken.Enable = 0
+    PvPToken.MapAllowType = 4
+    PvPToken.ItemID = 29434
+    PvPToken.ItemCount = 1
+    NoResetTalentsCost = 0
+    ToggleXP.Cost = 100000
+    Guild.AllowMultipleGuildMaster = 0
+    Guild.BankInitialTabs = 0
+    Guild.BankTabCost0 = 1000000
+    Guild.BankTabCost1 = 2500000
+    Guild.BankTabCost2 = 5000000
+    Guild.BankTabCost3 = 10000000
+    Guild.BankTabCost4 = 25000000
+    Guild.BankTabCost5 = 50000000
+    ShowKickInWorld = 0
+    ShowMuteInWorld = 0
+    ShowBanInWorld = 0
+    RecordUpdateTimeDiffInterval = 300000
+    MinRecordUpdateTimeDiff = 100
+    PlayerStart.String = ""
+    LevelReq.Trade = 1
+    LevelReq.Ticket = 1
+    LevelReq.Auction = 1
+    LevelReq.Mail = 1
+    PlayerDump.DisallowPaths = 1
+    PlayerDump.DisallowOverwrite = 1
+    DisconnectToleranceInterval = 0
+    MonsterSight = 50.000000
+    StrictChannelNames = 0
+    Instance.SharedNormalHeroicId = 1
+    Instance.ResetTimeRelativeTimestamp = 1135814400
+    TeleportTimeoutNear = 25
+    TeleportTimeoutFar = 45
+    MaxAllowedMMRDrop = 500
+    EnableLoginAfterDC = 1
+    DontCacheRandomMovementPaths = 0
+    MoveMaps.Enable = 1
+    Minigob.Manabonk.Enable = 1
+    Allow.IP.Based.Action.Logging = 0
+    Calculate.Creature.Zone.Area.Data = 0
+    Calculate.Gameoject.Zone.Area.Data = 0
+    Group.Raid.LevelRestriction = 10
+    DungeonFinder.OptionsMask = 5
+    LFG.Location.All = 0
+    DungeonAccessRequirements.PrintMode = 1
+    DungeonAccessRequirements.PortalAvgIlevelCheck = 0
+    DungeonAccessRequirements.LFGLevelDBCOverride = 0
+    DungeonAccessRequirements.OptionalStringID = 0
+    ICC.Buff.Horde    = 73822
+    ICC.Buff.Alliance = 73828
+    Item.SetItemTradeable = 1
+    FFAPvPTimer = 30
+    LootNeedBeforeGreedILvlRestriction = 70
+    LFG.MaxKickCount = 2
+    LFG.KickPreventionTimer = 900
+    EnablePlayerSettings = 0
+    JoinBGAndLFG.Enable = 0
+    LeaveGroupOnLogout.Enabled = 1
+    QuestPOI.Enabled = 1
+    ChangeFaction.MaxMoney = 0
+    Pet.RankMod.Health = 1
+    AuctionHouse.SearchTimeout = 1000
+    Appender.Console=1,4,0,"1 9 3 6 5 8"
+    Appender.Server=2,5,0,Server.log,w
+    Appender.GM=2,5,15,gm_%s.log
+    Appender.DBErrors=2,5,0,DBErrors.log
+    Logger.root=2,Console Server
+    Logger.commands.gm=4,Console GM
+    Logger.diff=3,Console Server
+    Logger.mmaps=4,Server
+    Logger.scripts.hotswap=4,Console Server
+    Logger.server=4,Console Server
+    Logger.sql.sql=2,Console DBErrors
+    Logger.sql=4,Console Server
+    Logger.time.update=4,Console Server
+    Logger.module=4,Console Server
+    Log.Async.Enable = 0
+    PacketSpoof.Policy = 1
+    PacketSpoof.BanMode = 0
+    PacketSpoof.BanDuration = 86400
+    Debug.Battleground = 0
+    Debug.Arena = 0
+    Metric.Enable = 0
+    Metric.Interval = 10
+    Metric.ConnectionInfo = "127.0.0.1;8086;worldserver"
+    Metric.OverallStatusInterval = 1

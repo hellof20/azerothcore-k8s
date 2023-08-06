@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sdk
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sdk
+  template:
+    metadata:
+      labels:
+        app: sdk
+    spec:
+      containers:
+      - image: hellof20/wow-sdk:v2
+        name: sdk
+        command: ["python","sdk.py"]
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "100Mi"
+            cpu: "100m"
+          limits:
+            memory: "100Mi"
+            cpu: "100m"
+        env:
+          - name: db
+            valueFrom:
+              configMapKeyRef:
+                name: mysql-config
+                key: db
+          - name: host
+            valueFrom:
+              configMapKeyRef:
+                name: mysql-config
+                key: host
+          - name: user
+            valueFrom:
+              configMapKeyRef:
+                name: mysql-config
+                key: user
+          - name: password
+            valueFrom:
+              configMapKeyRef:
+                name: mysql-config
+                key: password            
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sdk
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: sdk
+  type: LoadBalancer
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config
+data:
+  host: ac-database
+  user: root
+  password: password
+  db: acore_auth

@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: authserver
+  template:
+    metadata:
+      labels:
+        app: authserver
+    spec:
+      containers:
+      - image: hellof20/p-azero:v1
+        imagePullPolicy: IfNotPresent
+        name: authserver
+        command: ["/azerothcore/env/dist/bin/authserver"]
+        readinessProbe:
+          tcpSocket:
+            port: 3724
+          initialDelaySeconds: 5
+          periodSeconds: 5         
+        ports:
+        - containerPort: 3724
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "256m"
+          limits:
+            memory: "256Mi"
+            cpu: "256m"
+        volumeMounts:
+        - name: config
+          mountPath: /azerothcore/env/dist/etc
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: authserver-configmap            
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authserver-svc
+spec:
+  ports:
+  - port: 3724
+    protocol: TCP
+    targetPort: 3724
+  selector:
+    app: authserver
+  type: LoadBalancer
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: authserver-configmap
+data:
+  authserver.conf: |-
+    [authserver]
+    LogsDir = "/azerothcore/env/dist/logs" # Copied from dockerdist
+    MaxPingTime = 30
+    RealmServerPort = 3724
+    BindIP = "0.0.0.0"
+    PidFile = ""
+    UseProcessors = 0
+    ProcessPriority = 0
+    RealmsStateUpdateDelay = 20
+    WrongPass.MaxCount = 0
+    WrongPass.BanTime = 600
+    WrongPass.BanType = 0
+    WrongPass.Logging = 0
+    BanExpiryCheckInterval = 60
+    StrictVersionCheck = 0
+    SourceDirectory = ""
+    MySQLExecutable = ""
+    TempDir = "/azerothcore/env/dist/temp" # Copied from dockerdist
+    IPLocationFile = ""
+    AllowLoggingIPAddressesInDatabase = 1
+    LoginDatabaseInfo = "ac-database;3306;root;password;acore_auth" # Copied from dockerdist
+    Database.Reconnect.Seconds = 15
+    Database.Reconnect.Attempts = 20
+    LoginDatabase.WorkerThreads = 1
+    LoginDatabase.SynchThreads = 1
+    EnableTOTP = 0
+    TOTPMasterSecret =
+    Updates.EnableDatabases = 1
+    Updates.AutoSetup = 1
+    Updates.Redundancy = 1
+    Updates.ArchivedRedundancy = 0
+    Updates.AllowRehash = 1
+    Updates.CleanDeadRefMaxCount = 3
+    Appender.Console=1,5,0,"1 9 3 6 5 8"
+    Appender.Auth=2,5,0,Auth.log,w
+    Logger.root=4,Console Auth
+    SQLDriverLogFile = "SQLDriver.log" # Copied from dockerdist
+    SQLDriverQueryLogging = 1 # Copied from dockerdist
